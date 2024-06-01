@@ -33,3 +33,12 @@ It shows invalid access_token but i ensure that the access_token is correct.
 ### response = {
   "message": "Invalid authorization token"
 }
+
+
+I tried for Product category url 
+It agian shows invalid access token 
+![error_product](images/image5.png)
+
+### response = {
+  "message": "Invalid authorization token"
+}
