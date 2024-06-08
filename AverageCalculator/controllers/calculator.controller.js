@@ -10,17 +10,18 @@ const fetchFromServer = async (qualifiedId) => {
     e: "even",
     r: "rand",
   };
-  console.log(process.env.ACCESS_TOKEN)
+
   try {
     const response = await axios.get(
       `${process.env.TEST_SERVER_URL}/${endpointMap[qualifiedId]}`,
-       { timeout: process.env.TIMEOUT,
+      {
+        timeout: parseInt(process.env.TIMEOUT),
         headers: {
-            Authorization: `Bearer ${process.env.ACCESS_TOKEN}`
-          }
-       }
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        },
+      }
     );
-    
+
     return response.data.number;
   } catch (error) {
     return null;
@@ -29,7 +30,7 @@ const fetchFromServer = async (qualifiedId) => {
 
 const addNumber = (number) => {
   if (!uniqueNumbers.has(number)) {
-    if (window.length === process.env.WINDOW_SIZE) {
+    if (window.length === parseInt(process.env.WINDOW_SIZE)) {
       const oldestNumber = window.shift();
       uniqueNumbers.delete(oldestNumber);
     }
@@ -44,36 +45,50 @@ const calculateAverage = () => {
 };
 
 const calculatorController = async (req, res) => {
-  const startTime = Date.now();
   const numberId = req.params.numberId;
 
   if (!["p", "f", "e", "r"].includes(numberId)) {
     return res.status(400).json({ error: "Invalid number ID" });
   }
 
-  const number = await fetchFromServer(numberId);
-  if (number !== null) {
-    const previousState = [...window];
-    addNumber(number);
-    const currentState = [...window];
-    const average = calculateAverage();
+  let timeoutHandler;
+  const timeout = process.env.TIMEOUT;
 
-    const response = {
-      received_number: number,
-      previous_state: previousState,
-      current_state: currentState,
-      average: average,
-    };
+  const timeoutPromise = new Promise((resolve) => {
+    timeoutHandler = setTimeout(() => {
+      resolve({ error: "Response delayed due to internal server error", status: 500 });
+    }, timeout);
+  });
 
-    const responseTime = Date.now() - startTime;
-    const delay = TIMEOUT - responseTime;
-    if (delay > 0) {
-      setTimeout(() => res.json(response), delay);
+  const processPromise = (async () => {
+    const number = await fetchFromServer(numberId);
+    if (number !== null) {
+      const previousState = [...window];
+      addNumber(number);
+      const currentState = [...window];
+      const average = calculateAverage();
+
+      const response = {
+        numbers: number,
+        windowPrevState: previousState,
+        windowCurrState: currentState,
+        avg: average,
+      };
+
+      return { response, status: 200 };
     } else {
-      res.json(response);
+      return { error: "Failed to fetch number from test server", status: 500 };
     }
+  })();
+
+  const result = await Promise.race([processPromise, timeoutPromise]);
+  
+  clearTimeout(timeoutHandler);
+
+  if (result.status === 200) {
+    res.json(result.response);
   } else {
-    res.status(500).json({ error: "Failed to fetch number from test server" });
+    res.status(result.status).json({ error: result.error });
   }
 };
 
