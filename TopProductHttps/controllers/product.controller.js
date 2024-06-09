@@ -1,6 +1,8 @@
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 
+const productDetailsCache = new Map();
+
 const acceptedCompanies = ["AMZ", "FLP", "SNP", "MYN", "AZO"];
 const acceptedCategories = ["Phone", "Computer", "TV", "Earphone", "Tablet", "Charger", "Mouse", "Keypad", "Bluetooth", "Pendrive", "Remote", "Speaker", "Headset", "Laptop", "PC"];
 
@@ -64,6 +66,7 @@ const categoryController = async (req, res) => {
 
     const response = paginatedProducts.map(product => {
       const uniqueId = uuidv4();
+      productDetailsCache.set(uniqueId, product);
       return { ...product, id: uniqueId };
     });
 
@@ -74,7 +77,12 @@ const categoryController = async (req, res) => {
 };
 
 const productController = (req, res) => {
-  res.status(404).json({ error: 'Product not found' });
+  const productId = req.params.productid;
+  if (productDetailsCache.has(productId)) {
+    res.json(productDetailsCache.get(productId));
+  } else {
+    res.status(404).json({ error: 'Product not found' });
+  }
 };
 
 export {
