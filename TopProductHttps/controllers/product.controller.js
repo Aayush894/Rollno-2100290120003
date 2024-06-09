@@ -64,7 +64,6 @@ const categoryController = async (req, res) => {
 
     const response = paginatedProducts.map(product => {
       const uniqueId = uuidv4();
-      productDetailsCache.set(uniqueId, product);
       return { ...product, id: uniqueId };
     });
 
@@ -75,12 +74,7 @@ const categoryController = async (req, res) => {
 };
 
 const productController = (req, res) => {
-  const productId = req.params.productid;
-  if (productDetailsCache.has(productId)) {
-    res.json(productDetailsCache.get(productId));
-  } else {
-    res.status(404).json({ error: 'Product not found' });
-  }
+  res.status(404).json({ error: 'Product not found' });
 };
 
 export {
