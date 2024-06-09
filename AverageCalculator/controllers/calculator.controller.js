@@ -22,7 +22,7 @@ const fetchFromServer = async (qualifiedId) => {
       }
     );
 
-    return response.data.number;
+    return response.data.numbers;
   } catch (error) {
     return null;
   }
@@ -61,10 +61,11 @@ const calculatorController = async (req, res) => {
   });
 
   const processPromise = (async () => {
-    const number = await fetchFromServer(numberId);
-    if (number !== null) {
+    const numbers = await fetchFromServer(numberId);
+    if (numbers !== null && numbers.length > 0) {
       const previousState = [...window];
-      addNumber(number);
+      numbers.forEach(addNumber);
+      
       const currentState = [...window];
       const average = calculateAverage();
 
